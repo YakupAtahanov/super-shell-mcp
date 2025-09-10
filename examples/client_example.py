@@ -1,19 +1,19 @@
 import asyncio
 import json
+import sys
 
 from mcp.client.stdio import StdioServerParameters, stdio_client
 from mcp.client.session import ClientSession
 
 
 async def main():
-    # Start the server as a child process via stdio
-    params = StdioServerParameters(command="python", args=["-m", "your_pkg"])
+    # Start the server as a child process via stdio, using the same interpreter
+    params = StdioServerParameters(command=sys.executable, args=["-m", "src.server"])
 
     async with stdio_client(params) as (read, write):
-        session = ClientSession()
-
-        # Initialize session (handshake)
-        await session.initialize(read, write)
+        # Create session bound to transports and initialize
+        session = ClientSession(read, write)
+        await session.initialize()
 
         # --- List available tools ---
         tools = await session.list_tools()

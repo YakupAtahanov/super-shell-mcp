@@ -40,59 +40,61 @@ This approach balances security with usability by allowing potentially dangerous
 - Requires additional user interaction for approval
 - May create confusion if approvals are delayed or forgotten
 
-## Implementation
+## Implementation (Python)
 
-The approval workflow will be implemented using a queue of pending commands:
+The approval workflow uses a queue of pending commands represented by a dataclass:
 
-```typescript
-interface PendingCommand {
-  id: string;
-  command: string;
-  args: string[];
-  requestedAt: Date;
-  requestedBy?: string;
-  resolve: (value: CommandResult) => void;
-  reject: (reason: Error) => void;
-}
+```python
+from dataclasses import dataclass
+from typing import Callable, List, Optional
+
+@dataclass
+class PendingCommand:
+    id: str
+    command: str
+    args: List[str]
+    requested_at: float
+    requested_by: Optional[str]
+    resolve: Callable[[CommandResult], None]
+    reject: Callable[[Exception], None]
 ```
 
-When a command requiring approval is executed, it will be added to the queue:
+When a command requiring approval is executed, it is added to the queue and an event is emitted:
 
-```typescript
-private queueCommandForApproval(
-  command: string,
-  args: string[] = [],
-  requestedBy?: string
-): Promise<CommandResult> {
-  return new Promise((resolve, reject) => {
-    const id = randomUUID();
-    const pendingCommand: PendingCommand = {
-      id,
-      command,
-      args,
-      requestedAt: new Date(),
-      requestedBy,
-      resolve,
-      reject
-    };
-
-    this.pendingCommands.set(id, pendingCommand);
-    this.emit('command:pending', pendingCommand);
-  });
-}
+```python
+async def _queue_command_for_approval(self, command: str, args: Optional[List[str]], requested_by: Optional[str]) -> CommandResult:
+    loop = asyncio.get_event_loop()
+    fut = loop.create_future()
+    cmd_id = str(uuid.uuid4())
+    pending = PendingCommand(
+        id=cmd_id,
+        command=command,
+        args=list(args or []),
+        requested_at=loop.time(),
+        requested_by=requested_by,
+        resolve=lambda res: (not fut.done()) and fut.set_result(res),
+        reject=lambda err: (not fut.done()) and fut.set_exception(err),
+    )
+    self.pending_commands[cmd_id] = pending
+    self.emit("command:pending", pending)
+    loop.call_later(5.0, self._emit_timeout_if_pending, cmd_id)
+    return await fut
 ```
 
-The MCP server will expose tools to list, approve, and deny pending commands:
+The MCP server exposes tools to list, approve, and deny pending commands:
 
-```typescript
-// Get pending commands
-const pendingCommands = await client.callTool('get_pending_commands', {});
+```python
+@mcp.tool(name="get_pending_commands", description="Get pending commands")
+async def get_pending_commands() -> str:
+    ...
 
-// Approve a command
-await client.callTool('approve_command', { commandId });
+@mcp.tool(name="approve_command", args={"commandId": {"type": "string", "required": True}})
+async def approve_command(commandId: str) -> str:
+    ...
 
-// Deny a command
-await client.callTool('deny_command', { commandId, reason: 'Not allowed' });
+@mcp.tool(name="deny_command", args={"commandId": {"type": "string", "required": True}, "reason": {"type": "string"}})
+async def deny_command(commandId: str, reason: Optional[str] = None) -> str:
+    ...
 ```
 
 This workflow ensures that potentially dangerous commands are only executed after explicit approval, providing an additional layer of security.
