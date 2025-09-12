@@ -1,10 +1,13 @@
 {
   "mcpServers": {
-    "mac-shell": {
-      "command": "node",
-      "args": ["/path/to/mac-shell-mcp/build/index.js"],
-      "disabled": false,
-      "alwaysAllow": []
+    "super-shell-mcp": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "C:\\Path\\To\\super-shell-mcp",
+        "run",
+        "server.py"
+      ]
     }
   }
 }
