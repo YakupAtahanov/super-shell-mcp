@@ -7,7 +7,7 @@ from mcp.client.session import ClientSession
 
 async def main():
     # Start the server as a child process via stdio
-    params = StdioServerParameters(command="python", args=["-m", "your_pkg"])
+    params = StdioServerParameters(command="python", args=["server.py"])
 
     async with stdio_client(params) as (read, write):
         session = ClientSession()
