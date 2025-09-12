@@ -44,28 +44,34 @@ Each command will be categorized in a whitelist, and the security level will det
 
 ## Implementation
 
-The security levels will be implemented as an enum in the `CommandService` class:
+The security levels are implemented as an enum in Python:
 
-```typescript
-export enum CommandSecurityLevel {
-  SAFE = 'safe',
-  REQUIRES_APPROVAL = 'requires_approval',
-  FORBIDDEN = 'forbidden'
-}
+```python
+from enum import Enum
+
+class CommandSecurityLevel(str, Enum):
+    SAFE = "safe"
+    REQUIRES_APPROVAL = "requires_approval"
+    FORBIDDEN = "forbidden"
 ```
 
-Commands will be stored in a whitelist with their security level:
+Commands are stored in a whitelist as dataclasses:
 
-```typescript
-export interface CommandWhitelistEntry {
-  command: string;
-  securityLevel: CommandSecurityLevel;
-  allowedArgs?: Array<string | RegExp>;
-  description?: string;
-}
+```python
+from dataclasses import dataclass
+from typing import List, Optional
+
+@dataclass
+class CommandWhitelistEntry:
+    command: str
+    security_level: CommandSecurityLevel
+    allowed_args: Optional[List[str]] = None  # exact positional matches
+    description: Optional[str] = None
 ```
 
-When a command is executed, its security level will determine the behavior:
+Note: allowed_args currently uses exact positional string matches. Regex support can be added later.
+
+When a command is executed, its security level determines the behavior:
 - Safe commands are executed immediately
 - Commands requiring approval are queued for explicit approval
 - Forbidden commands are rejected with an error

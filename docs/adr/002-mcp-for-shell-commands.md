@@ -19,13 +19,9 @@ Each approach has different tradeoffs in terms of flexibility, security, and int
 We will implement shell command execution as an MCP server for the following reasons:
 
 1. **Standardization**: MCP is an emerging standard for AI tool integration, supported by major AI platforms like Anthropic's Claude.
-
 2. **Discoverability**: MCP provides built-in tool discovery, allowing AI assistants to automatically learn about available commands and their parameters.
-
 3. **Security**: MCP's structured approach allows for clear security boundaries and validation of inputs.
-
 4. **Flexibility**: MCP servers can be used with any MCP-compatible client, not just specific AI platforms.
-
 5. **Future-proofing**: As more AI platforms adopt MCP, our implementation will be compatible without changes.
 
 ## Consequences
@@ -44,48 +40,29 @@ We will implement shell command execution as an MCP server for the following rea
 - Requires understanding of MCP concepts and implementation details
 - May have more overhead than a direct, custom integration
 
-## Implementation
+## Implementation (Python)
 
-We will implement the MCP server using the official TypeScript SDK:
+We implement the MCP server using the Python MCP SDK (FastMCP):
 
-```typescript
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-```
+```python
+from typing import List, Optional
+from mcp.server.fastmcp import FastMCP
 
-The server will expose tools for command execution and whitelist management:
+mcp = FastMCP(name="super-shell-mcp", version="2.0.13")
 
-```typescript
-this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: [
-    {
-      name: 'execute_command',
-      description: 'Execute a shell command on macOS',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          command: {
-            type: 'string',
-            description: 'The command to execute',
-          },
-          args: {
-            type: 'array',
-            items: {
-              type: 'string',
-            },
-            description: 'Command arguments',
-          },
-        },
-        required: ['command'],
-      },
+@mcp.tool(
+    name="execute_command",
+    description="Execute a shell command on the current platform",
+    args={
+        "command": {"type": "string", "required": True},
+        "args": {"type": "array", "items": {"type": "string"}, "required": False},
     },
-    // Additional tools...
-  ],
-}));
+)
+async def execute_command(command: str, args: Optional[List[str]] = None) -> str:
+    ...  # delegate to CommandService
+
+async def _run_stdio() -> None:
+    await mcp.run_stdio()
 ```
 
-The server will use stdio transport for compatibility with Claude Desktop and other MCP clients:
-
-```typescript
-const transport = new StdioServerTransport();
-await this.server.connect(transport);
+The server uses stdio transport for compatibility with MCP clients (Claude Desktop, Roo Code, etc.) via `mcp.run_stdio()`.
