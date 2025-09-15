@@ -53,6 +53,7 @@ class CommandWhitelistEntry:
     security_level: CommandSecurityLevel
     allowed_args: Optional[List[str]] = None  # NOTE: TS allowed RegExp; see note below
     description: Optional[str] = None
+    timeout_override: Optional[int] = None  # Custom timeout in ms for long-running commands
 
 
 @dataclass
@@ -77,10 +78,10 @@ class PendingCommand:
 # ---------------------------------------------------------------------------
 
 class CommandService(EventEmitter):
-    def __init__(self, shell: Optional[str] = None, default_timeout: int = 30_000) -> None:
+    def __init__(self, shell: Optional[str] = None, default_timeout: int = 300_000) -> None:
         """
         :param shell: Shell to use for commands (default: auto-detected per platform)
-        :param default_timeout: Default timeout (ms) for command execution
+        :param default_timeout: Default timeout (ms) for command execution (default: 5 minutes)
         """
         super().__init__()
         self.shell: str = shell or get_default_shell()

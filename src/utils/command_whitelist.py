@@ -76,6 +76,13 @@ def get_windows_approval_commands() -> List[CommandWhitelistEntry]:
         CommandWhitelistEntry("rmdir", CommandSecurityLevel.REQUIRES_APPROVAL, "Remove directories"),
         CommandWhitelistEntry("rename", CommandSecurityLevel.REQUIRES_APPROVAL, "Rename files"),
         CommandWhitelistEntry("attrib", CommandSecurityLevel.REQUIRES_APPROVAL, "Change file attributes"),
+        # Package managers with extended timeouts
+        CommandWhitelistEntry("pip", CommandSecurityLevel.REQUIRES_APPROVAL, "Python package manager", timeout_override=600_000),  # 10 minutes
+        CommandWhitelistEntry("pip3", CommandSecurityLevel.REQUIRES_APPROVAL, "Python 3 package manager", timeout_override=600_000),  # 10 minutes
+        CommandWhitelistEntry("npm", CommandSecurityLevel.REQUIRES_APPROVAL, "Node.js package manager", timeout_override=600_000),  # 10 minutes
+        CommandWhitelistEntry("yarn", CommandSecurityLevel.REQUIRES_APPROVAL, "Yarn package manager", timeout_override=600_000),  # 10 minutes
+        CommandWhitelistEntry("cargo", CommandSecurityLevel.REQUIRES_APPROVAL, "Rust package manager", timeout_override=600_000),  # 10 minutes
+        CommandWhitelistEntry("go", CommandSecurityLevel.REQUIRES_APPROVAL, "Go toolchain", timeout_override=300_000),  # 5 minutes
     ]
 
 
@@ -91,6 +98,13 @@ def get_macos_approval_commands() -> List[CommandWhitelistEntry]:
         CommandWhitelistEntry("touch", CommandSecurityLevel.REQUIRES_APPROVAL, "Change file timestamps or create empty files"),
         CommandWhitelistEntry("chmod", CommandSecurityLevel.REQUIRES_APPROVAL, "Change file mode bits"),
         CommandWhitelistEntry("chown", CommandSecurityLevel.REQUIRES_APPROVAL, "Change file owner and group"),
+        # Package managers with extended timeouts
+        CommandWhitelistEntry("pip", CommandSecurityLevel.REQUIRES_APPROVAL, "Python package manager", timeout_override=600_000),  # 10 minutes
+        CommandWhitelistEntry("pip3", CommandSecurityLevel.REQUIRES_APPROVAL, "Python 3 package manager", timeout_override=600_000),  # 10 minutes
+        CommandWhitelistEntry("npm", CommandSecurityLevel.REQUIRES_APPROVAL, "Node.js package manager", timeout_override=600_000),  # 10 minutes
+        CommandWhitelistEntry("yarn", CommandSecurityLevel.REQUIRES_APPROVAL, "Yarn package manager", timeout_override=600_000),  # 10 minutes
+        CommandWhitelistEntry("cargo", CommandSecurityLevel.REQUIRES_APPROVAL, "Rust package manager", timeout_override=600_000),  # 10 minutes
+        CommandWhitelistEntry("go", CommandSecurityLevel.REQUIRES_APPROVAL, "Go toolchain", timeout_override=300_000),  # 5 minutes
     ]
 
 
