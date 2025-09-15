@@ -88,6 +88,8 @@ With **uv**:
 - `get_pending_commands` → list commands awaiting approval
 - `approve_command` → approve queued command
 - `deny_command` → deny queued command
+- `get_running_commands` → list currently executing commands
+- `cancel_command` → cancel a running command (like Ctrl+C)
 
 ## ✅ Testing
 

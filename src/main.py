@@ -309,12 +309,48 @@ async def deny_command(commandId: str, reason: Optional[str] = None) -> str:
         return f"Command denial failed: {msg}"
 
 
+@mcp.tool(
+    name="get_running_commands",
+    description="Get the list of currently running commands",
+)
+async def get_running_commands() -> str:
+    running_cmds = command_service.get_running_commands()
+    out = [
+        {
+            "id": c.id,
+            "command": c.command,
+            "args": c.args,
+            "startedAt": c.started_at,
+        }
+        for c in running_cmds
+    ]
+    return json.dumps(out, indent=2)
+
+
+@mcp.tool(
+    name="cancel_command",
+    description="Cancel a running command (like Ctrl+C)",
+    args={"commandId": {"type": "string", "required": True}},
+)
+async def cancel_command(commandId: str) -> str:
+    logger.debug(f"handleCancelCommand called with args: {json.dumps({'commandId': commandId})}")
+    logger.debug(f"[Cancel Attempt] ID: {commandId}")
+    try:
+        result = await command_service.cancel_command(commandId)
+        logger.info(f"[Command Cancelled] ID: {commandId}")
+        return result
+    except Exception as e:
+        msg = getattr(e, "message", str(e))
+        logger.error(f"[Cancel Error] ID: {commandId}, Error: {msg}")
+        return f"Command cancellation failed: {msg}"
+
+
 # -----------------------------------------------------------------------------
 # Run (stdio), mirror TS server.run()
 # -----------------------------------------------------------------------------
 async def _run_stdio() -> None:
     logger.info("Starting Super Shell MCP server")
-    await mcp.run_stdio_async()  # <-- FIX: correct async method
+    await mcp.run_stdio()
     logger.info("Super Shell MCP server running on stdio")
     print("Super Shell MCP server running on stdio", file=os.sys.stderr)
     print(f"Log file: {LOG_FILE}", file=os.sys.stderr)

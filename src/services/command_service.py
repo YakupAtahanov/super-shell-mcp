@@ -73,6 +73,15 @@ class PendingCommand:
     reject: Callable[[Exception], None]
 
 
+@dataclass
+class RunningCommand:
+    id: str
+    command: str
+    args: List[str]
+    process: asyncio.subprocess.Process
+    started_at: float  # epoch seconds
+
+
 # ---------------------------------------------------------------------------
 # CommandService
 # ---------------------------------------------------------------------------
@@ -87,6 +96,7 @@ class CommandService(EventEmitter):
         self.shell: str = shell or get_default_shell()
         self.whitelist: Dict[str, CommandWhitelistEntry] = {}
         self.pending_commands: Dict[str, PendingCommand] = {}
+        self.running_commands: Dict[str, RunningCommand] = {}
         self.default_timeout: int = default_timeout
 
         # Initialize with platform-specific commands
@@ -104,6 +114,9 @@ class CommandService(EventEmitter):
 
     def get_pending_commands(self) -> List[PendingCommand]:
         return list(self.pending_commands.values())
+
+    def get_running_commands(self) -> List[RunningCommand]:
+        return list(self.running_commands.values())
 
     # ---------------------------------------------------------------------
     # Whitelist management
@@ -226,6 +239,38 @@ class CommandService(EventEmitter):
         self.emit("command:denied", {"commandId": command_id, "reason": reason})
         pending.reject(RuntimeError(reason))
 
+    async def cancel_command(self, command_id: str) -> str:
+        """Cancel a running command by its ID"""
+        running = self.running_commands.get(command_id)
+        if not running:
+            # Check if it's a pending command instead
+            if command_id in self.pending_commands:
+                self.deny_command(command_id, "Command cancelled by user")
+                return f"Command {command_id} was pending and has been cancelled"
+            else:
+                raise RuntimeError(f"No running or pending command with ID: {command_id}")
+
+        try:
+            # Try graceful termination first (SIGTERM)
+            running.process.terminate()
+            try:
+                await asyncio.wait_for(running.process.wait(), timeout=5.0)
+                # Process terminated gracefully
+                self.running_commands.pop(command_id, None)
+                self.emit("command:cancelled", {"commandId": command_id, "reason": "terminated gracefully"})
+                return f"Command {command_id} terminated gracefully"
+            except asyncio.TimeoutError:
+                # Force kill if graceful termination failed
+                running.process.kill()
+                await running.process.wait()
+                self.running_commands.pop(command_id, None)
+                self.emit("command:cancelled", {"commandId": command_id, "reason": "force killed"})
+                return f"Command {command_id} force killed"
+        except ProcessLookupError:
+            # Process already finished
+            self.running_commands.pop(command_id, None)
+            return f"Command {command_id} was already finished"
+
     # ---------------------------------------------------------------------
     # Non-blocking queue (fire-and-forget)
     # ---------------------------------------------------------------------
@@ -343,14 +388,63 @@ class CommandService(EventEmitter):
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
+        
+        # Track running process
+        cmd_id = str(uuid.uuid4())
+        running_cmd = RunningCommand(
+            id=cmd_id,
+            command=command,
+            args=list(args),
+            process=proc,
+            started_at=asyncio.get_event_loop().time()
+        )
+        self.running_commands[cmd_id] = running_cmd
 
         try:
             stdout_b, stderr_b = await asyncio.wait_for(proc.communicate(), timeout=timeout_sec)
         except asyncio.TimeoutError:
             with contextlib.suppress(ProcessLookupError):
                 proc.kill()
-            raise RuntimeError("Command execution failed: timeout")
+            
+            # Remove from running commands
+            self.running_commands.pop(cmd_id, None)
+            
+            # Provide helpful timeout message based on command type
+            base_command = command.split("\\")[-1].split("/")[-1]
+            if base_command in ["pip", "npm", "yarn", "cargo", "go"]:
+                timeout_msg = (
+                    f"Command '{command}' timed out after {timeout_sec:.0f}s. "
+                    f"Package managers like '{base_command}' can take longer. "
+                    f"Consider running in background or increasing timeout."
+                )
+            else:
+                timeout_msg = f"Command '{command}' timed out after {timeout_sec:.0f}s"
+            
+            raise RuntimeError(f"Command execution failed: {timeout_msg}")
 
         stdout = stdout_b.decode(errors="replace") if stdout_b else ""
         stderr = stderr_b.decode(errors="replace") if stderr_b else ""
+        
+        # Check if command failed (non-zero exit code)
+        if proc.returncode != 0:
+            # Common error patterns for better error messages
+            if "command not found" in stderr.lower() or "not found" in stderr.lower():
+                error_msg = f"Command '{command}' not found. Please check the command name and ensure it's installed."
+            elif proc.returncode == 127:  # Standard "command not found" exit code
+                error_msg = f"Command '{command}' not found. Please check the command name and ensure it's installed."
+            elif proc.returncode == 126:  # Command found but not executable
+                error_msg = f"Command '{command}' found but not executable. Check file permissions."
+            else:
+                error_msg = f"Command '{command}' failed with exit code {proc.returncode}"
+            
+            # Include stderr in error message if available
+            if stderr.strip():
+                error_msg += f"\nError output: {stderr.strip()}"
+            
+            # Remove from running commands
+            self.running_commands.pop(cmd_id, None)
+            raise RuntimeError(f"Command execution failed: {error_msg}")
+        
+        # Remove from running commands on successful completion
+        self.running_commands.pop(cmd_id, None)
         return CommandResult(stdout=stdout, stderr=stderr)
