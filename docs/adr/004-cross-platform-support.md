@@ -1,4 +1,4 @@
-# ADR 004: Cross-Platform Shell Support
+# ADR 004: Linux-Only Shell Support
 
 ## Status
 
@@ -6,101 +6,85 @@ Accepted
 
 ## Context
 
-The original Mac Shell MCP server was designed specifically for macOS with ZSH shell. However, there's a need to support multiple platforms (Windows, macOS, Linux) and various shells (Bash, ZSH, PowerShell, CMD, etc.) to make the tool more widely usable.
+The original Mac Shell MCP server was designed specifically for macOS with ZSH shell. After initial cross-platform support, we've decided to focus specifically on Linux to simplify the codebase and reduce complexity.
 
-Key limitations in the original implementation:
+Key benefits of Linux-only approach:
 
-1. **Shell Path Hardcoding**: The server was hardcoded to use `/bin/zsh` as the default shell
-2. **Command Set Assumptions**: The default whitelist included macOS/Unix commands that don't exist natively on Windows
-3. **Path Handling**: Command validation extracted the base command by splitting on '/' which doesn't work for Windows backslash paths
-4. **Naming and Documentation**: The server was explicitly named "mac-shell-mcp" and documented for macOS
+1. **Simplified Codebase**: No need for platform detection or conditional logic
+2. **Consistent Environment**: All users run on the same platform with predictable behavior
+3. **Linux-First Commands**: Can focus on Linux-specific commands and tools
+4. **Reduced Testing Surface**: Only need to test on Linux environments
 
 ## Decision
 
-We will refactor the server to be platform-agnostic with the following changes:
+We will refactor the server to be Linux-only with the following changes:
 
-1. **Platform Detection**: Implement platform detection using `process.platform` to identify the current operating system
-2. **Shell Selection**: Select appropriate default shell based on platform and allow shell path to be configurable
-3. **Path Normalization**: Use Node.js `path` module for cross-platform path handling
-4. **Platform-Specific Command Whitelists**: Implement separate command whitelists for each supported platform
-5. **Rename and Rebrand**: Rename to "super-shell-mcp" and update documentation to reflect cross-platform support
+1. **Remove Platform Detection**: Eliminate all platform detection logic
+2. **Linux Shell Selection**: Use Linux-specific shell defaults (bash, sh, zsh)
+3. **Linux Path Handling**: Use standard Unix path handling
+4. **Linux Command Whitelists**: Implement Linux-specific command whitelists only
+5. **Simplified Documentation**: Update all documentation to reflect Linux-only support
 
 ## Consequences
 
 ### Positive
 
-- Works across Windows, macOS, and Linux
-- Supports various shells based on user preference
-- Maintains the same security model across platforms
-- Provides consistent experience regardless of platform
-- Increases the potential user base by supporting multiple platforms
+- Simplified codebase with no platform detection logic
+- Consistent Linux environment for all users
+- Focused command whitelist optimized for Linux
+- Reduced testing complexity (Linux only)
+- Better performance without platform detection overhead
 
 ### Negative
 
-- Increased complexity in command handling
-- Need to maintain separate command whitelists for each platform
-- Some commands may behave differently across platforms
-- Testing becomes more complex, requiring validation on multiple platforms
+- Limited to Linux users only
+- Cannot be used on Windows or macOS
+- Reduced potential user base
 
 ## Implementation
 
-The implementation uses a platform detection utility:
+The implementation is simplified for Linux-only:
 
-```typescript
-export function detectPlatform(): PlatformType {
-  const platform = process.platform;
-  
-  if (platform === 'win32') return PlatformType.WINDOWS;
-  if (platform === 'darwin') return PlatformType.MACOS;
-  if (platform === 'linux') return PlatformType.LINUX;
-  
-  return PlatformType.UNKNOWN;
-}
+```python
+def get_default_shell() -> str:
+    """
+    Get the default shell for Linux.
+    """
+    return os.environ.get("SHELL", "/bin/bash")
 ```
 
-Platform-specific shell detection:
+Linux-specific shell suggestions:
 
-```typescript
-export function getDefaultShell(): string {
-  const platform = detectPlatform();
-  
-  switch (platform) {
-    case PlatformType.WINDOWS:
-      return process.env.COMSPEC || 'cmd.exe';
-    case PlatformType.MACOS:
-      return '/bin/zsh';
-    case PlatformType.LINUX:
-      return process.env.SHELL || '/bin/bash';
-    default:
-      return process.env.SHELL || '/bin/sh';
-  }
-}
+```python
+def get_shell_suggestions() -> List[str]:
+    """
+    Get shell suggestions for Linux.
+    """
+    return ["/bin/bash", "/bin/sh", "/usr/bin/bash", "/usr/bin/zsh"]
 ```
 
-Platform-specific command whitelists:
+Linux command whitelists:
 
-```typescript
-private initializeDefaultWhitelist(): void {
-  const platformCommands = getPlatformSpecificCommands();
-  
-  platformCommands.forEach(entry => {
-    this.whitelist.set(entry.command, entry);
-  });
-}
+```python
+def get_platform_specific_commands() -> List[CommandWhitelistEntry]:
+    """
+    Get all Linux-specific commands (safe, approval, and forbidden).
+    """
+    # Add common safe commands
+    common_safe_commands = get_common_safe_commands()
+    
+    # Add Linux-specific commands
+    safe_commands = get_linux_safe_commands()
+    approval_commands = get_linux_approval_commands()
+    forbidden_commands = get_linux_forbidden_commands()
+
+    # Combine all commands
+    return [*common_safe_commands, *safe_commands, *approval_commands, *forbidden_commands]
 ```
 
-Cross-platform path handling:
+Standard Unix path handling:
 
-```typescript
-private validateCommand(command: string, args: string[]): CommandSecurityLevel | null {
-  // Extract the base command (without path) using path.basename
-  const baseCommand = path.basename(command);
-  
-  // Check if the command is in the whitelist
-  const entry = this.whitelist.get(baseCommand);
-  if (!entry) {
-    return null;
-  }
-  
-  // Rest of validation...
-}
+```python
+# Extract the base command using os.path.basename for Unix compatibility
+base_command = os.path.basename(command)
+```

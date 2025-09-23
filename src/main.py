@@ -12,7 +12,6 @@ from typing import Any, Dict, List, Optional
 from mcp.server.fastmcp import FastMCP
 
 from src.utils.platform import (
-    detect_platform,
     get_default_shell,
     get_shell_suggestions,
     get_common_shell_locations,
@@ -117,17 +116,16 @@ command_service.on("command:approval_timeout", _on_approval_timeout)
     description="Get information about the current platform and shell",
 )
 async def get_platform_info() -> str:
-    platform = detect_platform()
     current_shell = command_service.get_shell()
-    suggested_shells = get_shell_suggestions()[platform]
+    suggested_shells = get_shell_suggestions()
     common_locations = get_common_shell_locations()
 
     payload = {
-        "platform": platform.value,
+        "platform": "linux",
         "currentShell": current_shell,
         "suggestedShells": suggested_shells,
         "commonLocations": common_locations,
-        "helpMessage": f"Super Shell MCP is running on {platform.value} using {current_shell}",
+        "helpMessage": f"Super Shell MCP is running on Linux using {current_shell}",
     }
     return json.dumps(payload, indent=2)
 
@@ -330,7 +328,6 @@ async def get_running_commands() -> str:
 @mcp.tool(
     name="cancel_command",
     description="Cancel a running command (like Ctrl+C)",
-    args={"commandId": {"type": "string", "required": True}},
 )
 async def cancel_command(commandId: str) -> str:
     logger.debug(f"handleCancelCommand called with args: {json.dumps({'commandId': commandId})}")
@@ -348,18 +345,13 @@ async def cancel_command(commandId: str) -> str:
 # -----------------------------------------------------------------------------
 # Run (stdio), mirror TS server.run()
 # -----------------------------------------------------------------------------
-async def _run_stdio() -> None:
-    logger.info("Starting Super Shell MCP server")
-    await mcp.run_stdio()
-    logger.info("Super Shell MCP server running on stdio")
-    print("Super Shell MCP server running on stdio", file=os.sys.stderr)
-    print(f"Log file: {LOG_FILE}", file=os.sys.stderr)
-    logger.info(f"Log file: {LOG_FILE}")
-
-
 def main() -> None:
     try:
-        asyncio.run(_run_stdio())
+        logger.info("Starting Super Shell MCP server")
+        print("Super Shell MCP server running on stdio", file=os.sys.stderr)
+        print(f"Log file: {LOG_FILE}", file=os.sys.stderr)
+        logger.info(f"Log file: {LOG_FILE}")
+        mcp.run()
     except KeyboardInterrupt:
         logger.info("Received SIGINT signal, shutting down")
     finally:

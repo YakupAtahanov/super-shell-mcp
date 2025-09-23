@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from typing import List
-from src.utils.platform import PlatformType, detect_platform
 from src.services.command_service import (
     CommandSecurityLevel,
     CommandWhitelistEntry,
@@ -22,27 +21,10 @@ def get_common_safe_commands() -> List[CommandWhitelistEntry]:
 
 
 # ---------------------------------------------------------------------------
-# Windows-specific safe commands
+# Linux safe commands
 # ---------------------------------------------------------------------------
 
-def get_windows_safe_commands() -> List[CommandWhitelistEntry]:
-    return [
-        CommandWhitelistEntry("dir", CommandSecurityLevel.SAFE, "List directory contents"),
-        CommandWhitelistEntry("type", CommandSecurityLevel.SAFE, "Display the contents of a text file"),
-        CommandWhitelistEntry("cd", CommandSecurityLevel.SAFE, "Change directory"),
-        CommandWhitelistEntry("findstr", CommandSecurityLevel.SAFE, "Search for strings in files"),
-        CommandWhitelistEntry("where", CommandSecurityLevel.SAFE, "Locate programs"),
-        CommandWhitelistEntry("whoami", CommandSecurityLevel.SAFE, "Display current user"),
-        CommandWhitelistEntry("hostname", CommandSecurityLevel.SAFE, "Display computer name"),
-        CommandWhitelistEntry("ver", CommandSecurityLevel.SAFE, "Display operating system version"),
-    ]
-
-
-# ---------------------------------------------------------------------------
-# macOS-specific safe commands
-# ---------------------------------------------------------------------------
-
-def get_macos_safe_commands() -> List[CommandWhitelistEntry]:
+def get_linux_safe_commands() -> List[CommandWhitelistEntry]:
     return [
         CommandWhitelistEntry("ls", CommandSecurityLevel.SAFE, "List directory contents"),
         CommandWhitelistEntry("pwd", CommandSecurityLevel.SAFE, "Print working directory"),
@@ -53,44 +35,19 @@ def get_macos_safe_commands() -> List[CommandWhitelistEntry]:
         CommandWhitelistEntry("head", CommandSecurityLevel.SAFE, "Output the first part of files"),
         CommandWhitelistEntry("tail", CommandSecurityLevel.SAFE, "Output the last part of files"),
         CommandWhitelistEntry("wc", CommandSecurityLevel.SAFE, "Print newline, word, and byte counts"),
+        CommandWhitelistEntry("whoami", CommandSecurityLevel.SAFE, "Display current user"),
+        CommandWhitelistEntry("hostname", CommandSecurityLevel.SAFE, "Display computer name"),
+        CommandWhitelistEntry("uname", CommandSecurityLevel.SAFE, "Display system information"),
+        CommandWhitelistEntry("which", CommandSecurityLevel.SAFE, "Locate programs"),
+        CommandWhitelistEntry("whereis", CommandSecurityLevel.SAFE, "Locate programs"),
     ]
 
 
 # ---------------------------------------------------------------------------
-# Linux-specific safe commands (same as macOS)
+# Linux commands requiring approval
 # ---------------------------------------------------------------------------
 
-def get_linux_safe_commands() -> List[CommandWhitelistEntry]:
-    return get_macos_safe_commands()
-
-
-# ---------------------------------------------------------------------------
-# Windows commands requiring approval
-# ---------------------------------------------------------------------------
-
-def get_windows_approval_commands() -> List[CommandWhitelistEntry]:
-    return [
-        CommandWhitelistEntry("copy", CommandSecurityLevel.REQUIRES_APPROVAL, "Copy files"),
-        CommandWhitelistEntry("move", CommandSecurityLevel.REQUIRES_APPROVAL, "Move files"),
-        CommandWhitelistEntry("mkdir", CommandSecurityLevel.REQUIRES_APPROVAL, "Create directories"),
-        CommandWhitelistEntry("rmdir", CommandSecurityLevel.REQUIRES_APPROVAL, "Remove directories"),
-        CommandWhitelistEntry("rename", CommandSecurityLevel.REQUIRES_APPROVAL, "Rename files"),
-        CommandWhitelistEntry("attrib", CommandSecurityLevel.REQUIRES_APPROVAL, "Change file attributes"),
-        # Package managers with extended timeouts
-        CommandWhitelistEntry("pip", CommandSecurityLevel.REQUIRES_APPROVAL, "Python package manager", timeout_override=600_000),  # 10 minutes
-        CommandWhitelistEntry("pip3", CommandSecurityLevel.REQUIRES_APPROVAL, "Python 3 package manager", timeout_override=600_000),  # 10 minutes
-        CommandWhitelistEntry("npm", CommandSecurityLevel.REQUIRES_APPROVAL, "Node.js package manager", timeout_override=600_000),  # 10 minutes
-        CommandWhitelistEntry("yarn", CommandSecurityLevel.REQUIRES_APPROVAL, "Yarn package manager", timeout_override=600_000),  # 10 minutes
-        CommandWhitelistEntry("cargo", CommandSecurityLevel.REQUIRES_APPROVAL, "Rust package manager", timeout_override=600_000),  # 10 minutes
-        CommandWhitelistEntry("go", CommandSecurityLevel.REQUIRES_APPROVAL, "Go toolchain", timeout_override=300_000),  # 5 minutes
-    ]
-
-
-# ---------------------------------------------------------------------------
-# macOS commands requiring approval
-# ---------------------------------------------------------------------------
-
-def get_macos_approval_commands() -> List[CommandWhitelistEntry]:
+def get_linux_approval_commands() -> List[CommandWhitelistEntry]:
     return [
         CommandWhitelistEntry("mv", CommandSecurityLevel.REQUIRES_APPROVAL, "Move (rename) files"),
         CommandWhitelistEntry("cp", CommandSecurityLevel.REQUIRES_APPROVAL, "Copy files and directories"),
@@ -98,6 +55,10 @@ def get_macos_approval_commands() -> List[CommandWhitelistEntry]:
         CommandWhitelistEntry("touch", CommandSecurityLevel.REQUIRES_APPROVAL, "Change file timestamps or create empty files"),
         CommandWhitelistEntry("chmod", CommandSecurityLevel.REQUIRES_APPROVAL, "Change file mode bits"),
         CommandWhitelistEntry("chown", CommandSecurityLevel.REQUIRES_APPROVAL, "Change file owner and group"),
+        CommandWhitelistEntry("ln", CommandSecurityLevel.REQUIRES_APPROVAL, "Create links"),
+        CommandWhitelistEntry("tar", CommandSecurityLevel.REQUIRES_APPROVAL, "Archive files"),
+        CommandWhitelistEntry("gzip", CommandSecurityLevel.REQUIRES_APPROVAL, "Compress files"),
+        CommandWhitelistEntry("gunzip", CommandSecurityLevel.REQUIRES_APPROVAL, "Decompress files"),
         # Package managers with extended timeouts
         CommandWhitelistEntry("pip", CommandSecurityLevel.REQUIRES_APPROVAL, "Python package manager", timeout_override=600_000),  # 10 minutes
         CommandWhitelistEntry("pip3", CommandSecurityLevel.REQUIRES_APPROVAL, "Python 3 package manager", timeout_override=600_000),  # 10 minutes
@@ -105,81 +66,48 @@ def get_macos_approval_commands() -> List[CommandWhitelistEntry]:
         CommandWhitelistEntry("yarn", CommandSecurityLevel.REQUIRES_APPROVAL, "Yarn package manager", timeout_override=600_000),  # 10 minutes
         CommandWhitelistEntry("cargo", CommandSecurityLevel.REQUIRES_APPROVAL, "Rust package manager", timeout_override=600_000),  # 10 minutes
         CommandWhitelistEntry("go", CommandSecurityLevel.REQUIRES_APPROVAL, "Go toolchain", timeout_override=300_000),  # 5 minutes
+        CommandWhitelistEntry("apt", CommandSecurityLevel.REQUIRES_APPROVAL, "Debian package manager", timeout_override=600_000),  # 10 minutes
+        CommandWhitelistEntry("apt-get", CommandSecurityLevel.REQUIRES_APPROVAL, "Debian package manager", timeout_override=600_000),  # 10 minutes
+        CommandWhitelistEntry("yum", CommandSecurityLevel.REQUIRES_APPROVAL, "Red Hat package manager", timeout_override=600_000),  # 10 minutes
+        CommandWhitelistEntry("dnf", CommandSecurityLevel.REQUIRES_APPROVAL, "Fedora package manager", timeout_override=600_000),  # 10 minutes
+        CommandWhitelistEntry("pacman", CommandSecurityLevel.REQUIRES_APPROVAL, "Arch package manager", timeout_override=600_000),  # 10 minutes
     ]
 
 
 # ---------------------------------------------------------------------------
-# Linux commands requiring approval (same as macOS)
-# ---------------------------------------------------------------------------
-
-def get_linux_approval_commands() -> List[CommandWhitelistEntry]:
-    return get_macos_approval_commands()
-
-
-# ---------------------------------------------------------------------------
-# Windows forbidden commands
-# ---------------------------------------------------------------------------
-
-def get_windows_forbidden_commands() -> List[CommandWhitelistEntry]:
-    return [
-        CommandWhitelistEntry("del", CommandSecurityLevel.FORBIDDEN, "Delete files"),
-        CommandWhitelistEntry("erase", CommandSecurityLevel.FORBIDDEN, "Delete files"),
-        CommandWhitelistEntry("format", CommandSecurityLevel.FORBIDDEN, "Format a disk"),
-        CommandWhitelistEntry("runas", CommandSecurityLevel.FORBIDDEN, "Execute a program as another user"),
-    ]
-
-
-# ---------------------------------------------------------------------------
-# macOS forbidden commands
-# ---------------------------------------------------------------------------
-
-def get_macos_forbidden_commands() -> List[CommandWhitelistEntry]:
-    return [
-        CommandWhitelistEntry("rm", CommandSecurityLevel.FORBIDDEN, "Remove files or directories"),
-        CommandWhitelistEntry("sudo", CommandSecurityLevel.FORBIDDEN, "Execute a command as another user"),
-    ]
-
-
-# ---------------------------------------------------------------------------
-# Linux forbidden commands (same as macOS)
+# Linux forbidden commands
 # ---------------------------------------------------------------------------
 
 def get_linux_forbidden_commands() -> List[CommandWhitelistEntry]:
-    return get_macos_forbidden_commands()
+    return [
+        CommandWhitelistEntry("rm", CommandSecurityLevel.FORBIDDEN, "Remove files or directories"),
+        CommandWhitelistEntry("sudo", CommandSecurityLevel.FORBIDDEN, "Execute a command as another user"),
+        CommandWhitelistEntry("su", CommandSecurityLevel.FORBIDDEN, "Switch user"),
+        CommandWhitelistEntry("dd", CommandSecurityLevel.FORBIDDEN, "Convert and copy files"),
+        CommandWhitelistEntry("mkfs", CommandSecurityLevel.FORBIDDEN, "Make filesystem"),
+        CommandWhitelistEntry("fdisk", CommandSecurityLevel.FORBIDDEN, "Disk partition manipulator"),
+        CommandWhitelistEntry("shutdown", CommandSecurityLevel.FORBIDDEN, "Shutdown system"),
+        CommandWhitelistEntry("reboot", CommandSecurityLevel.FORBIDDEN, "Reboot system"),
+        CommandWhitelistEntry("halt", CommandSecurityLevel.FORBIDDEN, "Halt system"),
+        CommandWhitelistEntry("poweroff", CommandSecurityLevel.FORBIDDEN, "Power off system"),
+    ]
 
 
 # ---------------------------------------------------------------------------
-# Platform-specific aggregation
+# Linux command aggregation
 # ---------------------------------------------------------------------------
 
 def get_platform_specific_commands() -> List[CommandWhitelistEntry]:
-    platform = detect_platform()
-
-    safe_commands: List[CommandWhitelistEntry] = []
-    approval_commands: List[CommandWhitelistEntry] = []
-    forbidden_commands: List[CommandWhitelistEntry] = []
-
-    # Add common safe commands (cross-platform)
+    """
+    Get all Linux-specific commands (safe, approval, and forbidden).
+    """
+    # Add common safe commands
     common_safe_commands = get_common_safe_commands()
-
-    # Add platform-specific commands
-    if platform == PlatformType.WINDOWS:
-        safe_commands = get_windows_safe_commands()
-        approval_commands = get_windows_approval_commands()
-        forbidden_commands = get_windows_forbidden_commands()
-    elif platform == PlatformType.MACOS:
-        safe_commands = get_macos_safe_commands()
-        approval_commands = get_macos_approval_commands()
-        forbidden_commands = get_macos_forbidden_commands()
-    elif platform == PlatformType.LINUX:
-        safe_commands = get_linux_safe_commands()
-        approval_commands = get_linux_approval_commands()
-        forbidden_commands = get_linux_forbidden_commands()
-    else:
-        # Use Unix-like defaults for unknown platforms
-        safe_commands = get_linux_safe_commands()
-        approval_commands = get_linux_approval_commands()
-        forbidden_commands = get_linux_forbidden_commands()
+    
+    # Add Linux-specific commands
+    safe_commands = get_linux_safe_commands()
+    approval_commands = get_linux_approval_commands()
+    forbidden_commands = get_linux_forbidden_commands()
 
     # Combine all commands
     return [*common_safe_commands, *safe_commands, *approval_commands, *forbidden_commands]

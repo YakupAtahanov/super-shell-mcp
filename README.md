@@ -4,17 +4,17 @@
 
 [![smithery badge](https://smithery.ai/badge/@cfdude/super-shell-mcp)](https://smithery.ai/package/@cfdude/super-shell-mcp)
 
-A Python MCP (Model Context Protocol) server for executing shell commands across Windows, macOS, and Linux with secure **whitelisting** and **approval workflows**.
+A Python MCP (Model Context Protocol) server for executing shell commands on Linux with secure **whitelisting** and **approval workflows**.
 
 ## ✨ Features
 
-- Cross-platform shell command execution via MCP
-- Automatic platform detection and default shell selection
+- Linux shell command execution via MCP
+- Automatic Linux shell detection and selection
 - Security levels:
   - **Safe** → runs immediately
   - **Requires Approval** → held until explicitly approved
   - **Forbidden** → never executed
-- Platform-specific whitelists included
+- Linux-specific command whitelists included
 - File-based logging (`logs/super-shell-mcp.log`)
 - Tools for command management and platform diagnostics
 
@@ -27,7 +27,7 @@ cd super-shell-mcp
 
 # Create a virtual environment
 python -m venv .venv
-source .venv/bin/activate   # or .venv\Scripts\activate on Windows
+source .venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt

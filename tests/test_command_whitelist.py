@@ -18,3 +18,7 @@ def test_platform_specific_commands_not_empty():
     assert len(cmds) > 0
     # Must include echo (common)
     assert any(c.command == "echo" for c in cmds)
+    # Must include Linux-specific commands
+    assert any(c.command == "ls" for c in cmds)
+    assert any(c.command == "pwd" for c in cmds)
+    assert any(c.command == "cat" for c in cmds)

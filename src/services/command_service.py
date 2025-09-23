@@ -7,7 +7,7 @@ import uuid
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Callable, Dict, List, Optional, Sequence, Tuple
-from src.utils.platform import get_default_shell, PlatformType, detect_platform
+from src.utils.platform import get_default_shell
 
 
 # ---------------------------------------------------------------------------
@@ -368,17 +368,12 @@ class CommandService(EventEmitter):
     async def _run_now(self, command: str, args: Sequence[str], timeout: Optional[int]) -> CommandResult:
         """
         Emulates Node's execFile(command, args, { shell }) by invoking the configured shell
-        and passing the whole command line as a single string. Handles Windows vs POSIX.
+        and passing the whole command line as a single string. Linux-only implementation.
         """
-        platform = detect_platform()
         cmdline = " ".join([shlex.quote(command), *(shlex.quote(a) for a in args)])
 
-        if platform == PlatformType.WINDOWS:
-            # cmd.exe /c "<cmdline>"
-            shell_cmd = [self.shell, "/c", cmdline]
-        else:
-            # /bin/bash -c "<cmdline>"  (or zsh, etc.)
-            shell_cmd = [self.shell, "-c", cmdline]
+        # Linux shell: /bin/bash -c "<cmdline>" (or zsh, etc.)
+        shell_cmd = [self.shell, "-c", cmdline]
 
         # Convert ms → seconds for asyncio timeout
         timeout_sec = (timeout if timeout is not None else self.default_timeout) / 1000.0

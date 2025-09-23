@@ -1,15 +1,8 @@
 from src.utils.platform import (
-    detect_platform,
     get_default_shell,
     get_shell_suggestions,
     get_common_shell_locations,
-    PlatformType,
 )
-
-
-def test_detect_platform_has_valid_value():
-    pt = detect_platform()
-    assert pt in {PlatformType.WINDOWS, PlatformType.MACOS, PlatformType.LINUX, PlatformType.UNKNOWN}
 
 
 def test_get_default_shell_returns_string():
@@ -18,13 +11,17 @@ def test_get_default_shell_returns_string():
     assert len(sh) >= 1
 
 
-def test_shell_suggestions_has_platform_keys():
+def test_shell_suggestions_returns_linux_shells():
     s = get_shell_suggestions()
-    for key in [PlatformType.WINDOWS, PlatformType.MACOS, PlatformType.LINUX, PlatformType.UNKNOWN]:
-        assert key in s
+    assert isinstance(s, list)
+    assert "/bin/bash" in s
+    assert "/bin/sh" in s
+    assert all(isinstance(x, str) for x in s)
 
 
 def test_common_shell_locations_returns_list():
     locs = get_common_shell_locations()
     assert isinstance(locs, list)
     assert all(isinstance(x, str) for x in locs)
+    assert "/bin/bash" in locs
+    assert "/bin/sh" in locs
